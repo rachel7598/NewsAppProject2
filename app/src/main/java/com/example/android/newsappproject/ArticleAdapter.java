@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 
+
 public class ArticleAdapter extends ArrayAdapter<article> {
     private static final String LOG_TAG = ArticleAdapter.class.getSimpleName();
 
@@ -32,20 +33,38 @@ public class ArticleAdapter extends ArrayAdapter<article> {
         // get the article object located at this position
         article currentArticle = getItem(position);
 
-        // find the TextView in the article_list_item xml with the layout ID headline_view
-        // then get the article headline from the current article object and display in this text view
-        TextView headlineTextView = (TextView) listItemView.findViewById(R.id.headline_view);
-        headlineTextView.setText(currentArticle.getArticleHeadline());
+        String headlineAndName = currentArticle.getArticleHeadline();
 
+        String articleHeadline;
+        String authorName;
+        if(headlineAndName.contains("|")){
+            String[] parts = headlineAndName.split("\\|");
+            articleHeadline = parts[0];
+            authorName = parts[1];
+        }
+        else{
+            articleHeadline= currentArticle.getArticleHeadline();
+            authorName = "Author Unknown";
+        }
+
+        TextView headlineTextView = (TextView) listItemView.findViewById(R.id.headline_view);
+        headlineTextView.setText(articleHeadline);
+
+
+        TextView authorTextView = (TextView) listItemView.findViewById(R.id.author_view);
+        authorTextView.setText(authorName);
+
+
+        // section name
         TextView sectionTextView = (TextView) listItemView.findViewById(R.id.section_view);
         sectionTextView.setText(currentArticle.getArticleSection());
 
         TextView dateTextView = (TextView) listItemView.findViewById(R.id.date_view);
         dateTextView.setText(currentArticle.getArticleDate());
 
-        TextView authorTextView = (TextView) listItemView.findViewById(R.id.author_view);
-        authorTextView.setText(currentArticle.getArticleAuthorName());
+
 
         return listItemView;
     }
+
 }

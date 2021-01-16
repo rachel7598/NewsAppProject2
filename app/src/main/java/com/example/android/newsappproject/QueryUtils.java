@@ -1,33 +1,149 @@
 package com.example.android.newsappproject;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.util.ArrayList;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.util.List;
+
 /**
- * Helper methods related to requesting and receiving article information from the Guardian api
+ * Helper methods related to requesting and receiving earthquake data from USGS.
  */
 public final class QueryUtils {
 
-    /** Sample JSON response for a Guardian query */
-    private static final String SAMPLE_JSON_RESPONSE = "{\"response\":{\"status\":\"ok\",\"userTier\":\"external\",\"total\":18769,\"startIndex\":1,\"pageSize\":10,\"currentPage\":1,\"pages\":1877,\"orderBy\":\"relevance\",\"results\":[{\"id\":\"education/2020/dec/03/gavin-williamson-in-eton-mess-as-he-pitches-into-no-girls-policy\",\"type\":\"article\",\"sectionId\":\"education\",\"sectionName\":\"Education\",\"webPublicationDate\":\"2020-12-03T20:01:32Z\",\"webTitle\":\"Eton College head denies stifling debate after teacher's dismissal\",\"webUrl\":\"https://www.theguardian.com/education/2020/dec/03/gavin-williamson-in-eton-mess-as-he-pitches-into-no-girls-policy\",\"apiUrl\":\"https://content.guardianapis.com/education/2020/dec/03/gavin-williamson-in-eton-mess-as-he-pitches-into-no-girls-policy\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"commentisfree/2020/dec/30/the-guardian-view-on-the-brexit-debate-no-scrutiny-no-choice\",\"type\":\"article\",\"sectionId\":\"commentisfree\",\"sectionName\":\"Opinion\",\"webPublicationDate\":\"2020-12-30T18:56:29Z\",\"webTitle\":\"The Guardian view on the Brexit debate: no scrutiny, no choice | Editorial\",\"webUrl\":\"https://www.theguardian.com/commentisfree/2020/dec/30/the-guardian-view-on-the-brexit-debate-no-scrutiny-no-choice\",\"apiUrl\":\"https://content.guardianapis.com/commentisfree/2020/dec/30/the-guardian-view-on-the-brexit-debate-no-scrutiny-no-choice\",\"isHosted\":false,\"pillarId\":\"pillar/opinion\",\"pillarName\":\"Opinion\"},{\"id\":\"environment/2020/aug/20/time-for-real-debate-on-river-regulation\",\"type\":\"article\",\"sectionId\":\"environment\",\"sectionName\":\"Environment\",\"webPublicationDate\":\"2020-08-20T17:35:28Z\",\"webTitle\":\"Time for real debate on river regulation\",\"webUrl\":\"https://www.theguardian.com/environment/2020/aug/20/time-for-real-debate-on-river-regulation\",\"apiUrl\":\"https://content.guardianapis.com/environment/2020/aug/20/time-for-real-debate-on-river-regulation\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"politics/video/2020/nov/23/boris-johnson-presents-tougher-tiered-restrictions-for-england-video\",\"type\":\"video\",\"sectionId\":\"politics\",\"sectionName\":\"Politics\",\"webPublicationDate\":\"2020-11-23T18:25:32Z\",\"webTitle\":\"Boris Johnson sets out 'tougher' tiered restrictions for England during Commons debate – video\",\"webUrl\":\"https://www.theguardian.com/politics/video/2020/nov/23/boris-johnson-presents-tougher-tiered-restrictions-for-england-video\",\"apiUrl\":\"https://content.guardianapis.com/politics/video/2020/nov/23/boris-johnson-presents-tougher-tiered-restrictions-for-england-video\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"politics/2020/oct/08/belgian-ambassador-throws-king-charles-ii-treaty-into-eu-fishing-debate\",\"type\":\"article\",\"sectionId\":\"politics\",\"sectionName\":\"Politics\",\"webPublicationDate\":\"2020-10-08T16:53:01Z\",\"webTitle\":\"Belgian ambassador throws King Charles II treaty into EU fishing debate\",\"webUrl\":\"https://www.theguardian.com/politics/2020/oct/08/belgian-ambassador-throws-king-charles-ii-treaty-into-eu-fishing-debate\",\"apiUrl\":\"https://content.guardianapis.com/politics/2020/oct/08/belgian-ambassador-throws-king-charles-ii-treaty-into-eu-fishing-debate\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"commentisfree/2020/sep/30/trump-biden-debate-britain-special-relationship\",\"type\":\"article\",\"sectionId\":\"commentisfree\",\"sectionName\":\"Opinion\",\"webPublicationDate\":\"2020-09-30T17:02:42Z\",\"webTitle\":\"The Trump-Biden debate revealed the dangers of Britain's 'special relationship' | Martin Kettle\",\"webUrl\":\"https://www.theguardian.com/commentisfree/2020/sep/30/trump-biden-debate-britain-special-relationship\",\"apiUrl\":\"https://content.guardianapis.com/commentisfree/2020/sep/30/trump-biden-debate-britain-special-relationship\",\"isHosted\":false,\"pillarId\":\"pillar/opinion\",\"pillarName\":\"Opinion\"},{\"id\":\"business/2020/sep/18/mps-to-debate-arm-holdings-40bn-sale-despite-nvidia-bosss-guarantees\",\"type\":\"article\",\"sectionId\":\"business\",\"sectionName\":\"Business\",\"webPublicationDate\":\"2020-09-18T15:05:00Z\",\"webTitle\":\"MPs to debate Arm Holdings $40bn sale despite Nvidia boss's guarantees\",\"webUrl\":\"https://www.theguardian.com/business/2020/sep/18/mps-to-debate-arm-holdings-40bn-sale-despite-nvidia-bosss-guarantees\",\"apiUrl\":\"https://content.guardianapis.com/business/2020/sep/18/mps-to-debate-arm-holdings-40bn-sale-despite-nvidia-bosss-guarantees\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"commentisfree/2020/oct/26/ffree-school-meals-row-debate-poverty-desperate-situations\",\"type\":\"article\",\"sectionId\":\"commentisfree\",\"sectionName\":\"Opinion\",\"webPublicationDate\":\"2020-10-26T15:52:07Z\",\"webTitle\":\"The free school meals row should open up a debate about poverty itself  | Jack Monroe\",\"webUrl\":\"https://www.theguardian.com/commentisfree/2020/oct/26/ffree-school-meals-row-debate-poverty-desperate-situations\",\"apiUrl\":\"https://content.guardianapis.com/commentisfree/2020/oct/26/ffree-school-meals-row-debate-poverty-desperate-situations\",\"isHosted\":false,\"pillarId\":\"pillar/opinion\",\"pillarName\":\"Opinion\"},{\"id\":\"politics/2020/sep/14/keir-starmer-to-miss-crucial-brexit-debate-due-to-self-isolation-coronavirus\",\"type\":\"article\",\"sectionId\":\"politics\",\"sectionName\":\"Politics\",\"webPublicationDate\":\"2020-09-14T12:04:26Z\",\"webTitle\":\"Keir Starmer to miss crucial Brexit debate due to self-isolation\",\"webUrl\":\"https://www.theguardian.com/politics/2020/sep/14/keir-starmer-to-miss-crucial-brexit-debate-due-to-self-isolation-coronavirus\",\"apiUrl\":\"https://content.guardianapis.com/politics/2020/sep/14/keir-starmer-to-miss-crucial-brexit-debate-due-to-self-isolation-coronavirus\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"},{\"id\":\"politics/2020/aug/28/barnier-flabbergasted-uk-attempt-reopen-brexit-specialty-food-drink-debate\",\"type\":\"article\",\"sectionId\":\"politics\",\"sectionName\":\"Politics\",\"webPublicationDate\":\"2020-08-28T13:58:33Z\",\"webTitle\":\"Barnier 'flabbergasted' at UK attempt to reopen Brexit specialty food debate\",\"webUrl\":\"https://www.theguardian.com/politics/2020/aug/28/barnier-flabbergasted-uk-attempt-reopen-brexit-specialty-food-drink-debate\",\"apiUrl\":\"https://content.guardianapis.com/politics/2020/aug/28/barnier-flabbergasted-uk-attempt-reopen-brexit-specialty-food-drink-debate\",\"isHosted\":false,\"pillarId\":\"pillar/news\",\"pillarName\":\"News\"}]}}";
-    //* Create a private constructor because no one should ever create a {@link QueryUtils} object.
-     //* This class is only meant to hold static variables and methods, which can be accessed
-     //* directly from the class name QueryUtils (and an object instance of QueryUtils is not needed).
-     //*/
+    /** Tag for the log messages */
+    private static final String LOG_TAG = QueryUtils.class.getSimpleName();
+
+    /**
+     * Create a private constructor because no one should ever create a {@link QueryUtils} object.
+     * This class is only meant to hold static variables and methods, which can be accessed
+     * directly from the class name QueryUtils (and an object instance of QueryUtils is not needed).
+     */
     private QueryUtils() {
     }
+
+    /**
+     * Query the USGS dataset and return a list of {@link article} objects.
+     */
+    public static List<article> fetchArticleData(String requestUrl) {
+        // Create URL object
+        URL url = createUrl(requestUrl);
+
+        // Perform HTTP request to the URL and receive a JSON response back
+        String jsonResponse = null;
+        try {
+            jsonResponse = makeHttpRequest(url);
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Problem making the HTTP request.", e);
+        }
+
+        // Extract relevant fields from the JSON response and create a list of {@link Earthquake}s
+        List<article> articles = extractResponseFromJson(jsonResponse);
+
+        // Return the list of {@link Earthquake}s
+        return articles;
+    }
+
+    /**
+     * Returns new URL object from the given string URL.
+     */
+    private static URL createUrl(String stringUrl) {
+        URL url = null;
+        try {
+            url = new URL(stringUrl);
+        } catch (MalformedURLException e) {
+            Log.e(LOG_TAG, "Problem building the URL ", e);
+        }
+        return url;
+    }
+
+    /**
+     * Make an HTTP request to the given URL and return a String as the response.
+     */
+    private static String makeHttpRequest(URL url) throws IOException {
+        String jsonResponse = "";
+
+        // If the URL is null, then return early.
+        if (url == null) {
+            return jsonResponse;
+        }
+
+        HttpURLConnection urlConnection = null;
+        InputStream inputStream = null;
+        try {
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setReadTimeout(10000 /* milliseconds */);
+            urlConnection.setConnectTimeout(15000 /* milliseconds */);
+            urlConnection.setRequestMethod("GET");
+            urlConnection.connect();
+
+            // If the request was successful (response code 200),
+            // then read the input stream and parse the response.
+            if (urlConnection.getResponseCode() == 200) {
+                inputStream = urlConnection.getInputStream();
+                jsonResponse = readFromStream(inputStream);
+            } else {
+                Log.e(LOG_TAG, "Error response code: " + urlConnection.getResponseCode());
+            }
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Problem retrieving the earthquake JSON results.", e);
+        } finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            if (inputStream != null) {
+                // Closing the input stream could throw an IOException, which is why
+                // the makeHttpRequest(URL url) method signature specifies than an IOException
+                // could be thrown.
+                inputStream.close();
+            }
+        }
+        return jsonResponse;
+    }
+
+    /**
+     * Convert the {@link InputStream} into a String which contains the
+     * whole JSON response from the server.
+     */
+    private static String readFromStream(InputStream inputStream) throws IOException {
+        StringBuilder output = new StringBuilder();
+        if (inputStream != null) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
+            BufferedReader reader = new BufferedReader(inputStreamReader);
+            String line = reader.readLine();
+            while (line != null) {
+                output.append(line);
+                line = reader.readLine();
+            }
+        }
+        return output.toString();
+    }
+
 
     /**
      * Return a list of {@link article objects that has been built up from
      * parsing a JSON response.
      */
-    public static ArrayList<article> extractArticles() {
+    private static List<article> extractResponseFromJson(String articleJSON) {
+
+        // If the JSON string is empty or null, then return early.
+        if (TextUtils.isEmpty(articleJSON)) {
+            return null;
+        }
+
 
         // Create an empty ArrayList that we can start adding articles to
         ArrayList<article> articles = new ArrayList<>();
@@ -39,29 +155,31 @@ public final class QueryUtils {
 
             //create the root JSON object, parse the JSON response and store it in a variable
             // called baseJSONResponse
-            JSONObject baseJsonResponse = new JSONObject(SAMPLE_JSON_RESPONSE);
+            JSONObject baseJsonResponse = new JSONObject(articleJSON);
+
+
             // call the getJSONArray method on the baseJsonResponse object, passing in the
             // response key as a string, and storing the result in the articleArray variable
             // which is of the data type JSONArray
-            JSONArray articleArray = baseJsonResponse.getJSONArray("results");
+            JSONObject response = baseJsonResponse.getJSONObject("response");
+            JSONArray articleArray = response.getJSONArray("results");
 
             // loop through each article in the article array
             // as long as i is less than the number of articles in the array...
-            for( int i = 0; i< articleArray.length(); i++){
+            for (int i = 0; i < articleArray.length(); i++) {
 
                 // pull out the JSON object at the specific position on the articleArray
                 JSONObject currentArticle = articleArray.getJSONObject(i);
-                // extract the JSONObject associated with the results key
-                JSONObject results = currentArticle.getJSONObject("results");
-                // get the data we need
-                String articleHeadline = results.getString("webTitle");
-                String articleSection = results.getString("sectionId");
-                String articleDate = results.getString("webPublicationDate");
 
-                article article = new article(articleHeadline, articleSection, articleDate);
+                // get the data we need
+                String articleHeadline = currentArticle.getString("webTitle");
+                String articleSection = currentArticle.getString("sectionName");
+                String articleDate = currentArticle.getString("webPublicationDate");
+                String articleUrl = currentArticle.getString("webUrl");
+
+                article article = new article(articleHeadline, articleSection, articleDate, articleUrl);
                 articles.add(article);
             }
-
 
         } catch (JSONException e) {
             // If an error is thrown when executing any of the above statements in the "try" block,
@@ -70,9 +188,7 @@ public final class QueryUtils {
             Log.e("QueryUtils", "Problem parsing the article JSON results", e);
         }
 
-
-        // Return the list of earthquakes
+        // Return the list of articles
         return articles;
     }
-
 }

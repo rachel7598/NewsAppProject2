@@ -1,33 +1,134 @@
 package com.example.android.newsappproject;
 
 import androidx.appcompat.app.AppCompatActivity;
-
+import android.app.LoaderManager;
+import android.app.LoaderManager.LoaderCallbacks;
+import android.content.Context;
+import android.content.Intent;
+import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
-import android.widget.ArrayAdapter;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements LoaderCallbacks<List<article>> {
 
-    public static final String LOG_TAG = MainActivity.class.getName();
+    private static final String LOG_TAG = MainActivity.class.getName();
+
+    /** URL for  data from the Guardian */
+    private static final String GUARDIAN_REQUEST_URL =
+            "https://content.guardianapis.com/search?q=debate&tag=politics/politics&from-date=2014-01-01&api-key=test";
+
+    /**
+     * Constant value for the article loader ID.
+     * This really only comes into play if you're using multiple loaders.
+     */
+    private static final int ARTICLE_LOADER_ID = 1;
+
+    /** Adapter for the list of articles */
+    private ArticleAdapter mAdapter;
+
+    /** TextView that is displayed when the list is empty */
+    private TextView mEmptyStateTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // get the list of articles from the QueryUtils method
-        ArrayList<article> articles = QueryUtils.extractArticles();
+        // Find a reference to the {@link ListView} in the layout
+        ListView articleListView = (ListView) findViewById(R.id.article_list);
 
-        // create an article adapter to display the list items
-        ArticleAdapter articleAdapter = new ArticleAdapter(this, articles);
+        // Create a new adapter that takes an empty list of articles as input
+        mAdapter = new ArticleAdapter(this, new ArrayList<article>());
 
-        // get a reference to the article list view and attach it to the adapter
-       ListView articleListView = findViewById(R.id.article_list);
+        // Set the adapter on the {@link ListView}
+        // so the list can be populated in the user interface
+        articleListView.setAdapter(mAdapter);
 
-       // set the adapter
-       articleListView.setAdapter(articleAdapter);
+        // Set an item click listener on the ListView, which sends an intent to a web browser
+        // to open a website with more information about the selected article.
+        articleListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+                // Find the current article that was clicked on
+                article currentArticle = mAdapter.getItem(position);
 
+                // Convert the String URL into a URI object (to pass into the Intent constructor)
+                Uri articleUri = Uri.parse(currentArticle.getArticleUrl());
+
+                // Create a new intent to view the article URI
+                Intent websiteIntent = new Intent(Intent.ACTION_VIEW,articleUri);
+
+                // Send the intent to launch a new activity
+                startActivity(websiteIntent);
+            }
+        });
+
+        // Get a reference to the ConnectivityManager to check state of network connectivity
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // Get details on the currently active default data network
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+        // If there is a network connection, fetch data
+        if (networkInfo != null && networkInfo.isConnected()) {
+            // Get a reference to the LoaderManager, in order to interact with loaders.
+            LoaderManager loaderManager = getLoaderManager();
+
+            // Initialize the loader. Pass in the int ID constant defined above and pass in null for
+            // the bundle. Pass in this activity for the LoaderCallbacks parameter (which is valid
+            // because this activity implements the LoaderCallbacks interface).
+            loaderManager.initLoader(ARTICLE_LOADER_ID, null, this);
+        } else {
+            // Otherwise, display error
+            // First, hide loading indicator so error message will be visible
+            View loadingIndicator = findViewById(R.id.loading_indicator);
+            loadingIndicator.setVisibility(View.GONE);
+
+            // Update empty state with no connection error message
+            mEmptyStateTextView.setText(R.string.no_internet_connection);
+        }
+    }
+
+    @Override
+    public Loader<List<article>> onCreateLoader(int i, Bundle bundle) {
+        // Create a new loader for the given URL
+        return new ArticleLoader(this, GUARDIAN_REQUEST_URL);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<List<article>> Loader, List<article> articles) {
+        // Hide loading indicator because the data has been loaded
+        View loadingIndicator = findViewById(R.id.loading_indicator);
+        loadingIndicator.setVisibility(View.GONE);
+
+        // Set empty state text to display "No articles"
+        mEmptyStateTextView.setText(R.string.no_articles);
+
+        // Clear the adapter of previous article data
+        mAdapter.clear();
+
+        // If there is a valid list of {@link article}s, then add them to the adapter's
+        // data set. This will trigger the ListView to update.
+        if (articles != null && !articles.isEmpty()) {
+            mAdapter.addAll(articles);
+
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<article>> loader) {
+        // Loader reset, so we can clear out our existing data.
+        mAdapter.clear();
     }
 }

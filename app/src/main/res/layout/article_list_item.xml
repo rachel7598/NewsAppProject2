@@ -12,9 +12,11 @@
         android:layout_marginTop="10dp"
         android:fontFamily="sans-serif-condensed-medium"
         android:gravity="center_horizontal"
+        android:paddingHorizontal="10dp"
         android:text="Article Headline"
+        android:textAllCaps="true"
         android:textColor="@color/black"
-        android:textSize="25sp" />
+        android:textSize="20sp" />
 
     <TextView
         android:id="@+id/section_view"
@@ -24,7 +26,7 @@
         android:fontFamily="sans-serif-condensed"
         android:gravity="center_horizontal"
         android:text="Article Section"
-        android:textSize="20sp"
+        android:textSize="15sp"
 
 
         />
@@ -44,7 +46,7 @@
             android:gravity="center_horizontal"
             android:padding="10dp"
             android:text="Publication Date"
-            android:textSize="20sp" />
+            android:textSize="15sp" />
 
         <TextView
             android:id="@+id/author_view"
@@ -55,7 +57,7 @@
             android:gravity="center_horizontal"
             android:padding="10dp"
             android:text="Author Name"
-            android:textSize="20sp" />
+            android:textSize="15sp" />
     </LinearLayout>
 
 </LinearLayout>
